@@ -6,19 +6,20 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-flask = "*"
 sqlalchemy = "*"
-flask-sqlalchemy = "*"
-flask-migrate = "==4.0.5"
 flask-swagger = "==0.2.14"
 psycopg2-binary = "*"
 python-dotenv = "==1.0.0"
 mysqlclient = "==2.2.0"
-flask-cors = "==4.0.0"
 gunicorn = "*"
 flask-admin = "==1.6.1"
 wtforms = "==3.0.1"
 eralchemy2 = "*"
+flask-cors = "*"
+flask = "*"
+flask-sqlalchemy = "*"
+flask-migrate = "*"
+werkzeug = "*"
 
 [requires]
 python_version = "3.13"

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Auth Flask + React (sin build)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; }
+      nav { display:flex; gap:.75rem; padding:12px; border-bottom:1px solid #ddd; }
+      main { padding:20px; }
+      input,button { padding:.5rem; margin:.25rem 0; }
+      form { display:flex; flex-direction:column; max-width: 320px; }
+    </style>
+  </head>
+  <body>
+    <nav id="nav"></nav>
+    <main id="root"></main>
+
+    <script type="text/babel">
+     
+      const routes = {
+        "": "home",
+        "#/": "home",
+        "#/login": "login",
+        "#/signup": "signup",
+        "#/private": "private",
+      };
+
+      const API = "/api";
+
+      const NavBar = () => {
+        const hasToken = !!sessionStorage.getItem("token");
+        const logout = () => {
+          sessionStorage.removeItem("token");
+          location.hash = "#/login";
+        };
+        return (
+          <>
+            <a href="#/">Home</a>
+            <a href="#/signup">Signup</a>
+            <a href="#/login">Login</a>
+            <a href="#/private">Private</a>
+            {hasToken && <button onClick={logout}>Logout</button>}
+          </>
+        );
+      };
+
+      const Home = () => (
+        <>
+          <h1>Home (pública)</h1>
+          <p>Bienvenida 👋</p>
+        </>
+      );
+
+      const Signup = () => {
+        const [email, setEmail] = React.useState("");
+        const [password, setPassword] = React.useState("");
+        const [msg, setMsg] = React.useState("");
+
+        const submit = async (e) => {
+          e.preventDefault(); setMsg("");
+          const res = await fetch(`${API}/signup`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json().catch(()=>({}));
+          if (res.ok) location.hash = "#/login";
+          else setMsg(data.msg || "No se pudo registrar");
+        };
+
+        return (
+          <>
+            <h1>Signup</h1>
+            <form onSubmit={submit}>
+              <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+              <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} />
+              <button type="submit">Crear cuenta</button>
+            </form>
+            {msg && <p>{msg}</p>}
+          </>
+        );
+      };
+
+      const Login = () => {
+        const [email, setEmail] = React.useState("");
+        const [password, setPassword] = React.useState("");
+        const [msg, setMsg] = React.useState("");
+
+        const submit = async (e) => {
+          e.preventDefault(); setMsg("");
+          const res = await fetch(`${API}/token`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json().catch(()=>({}));
+          if (res.ok && data.access_token) {
+            sessionStorage.setItem("token", data.access_token);
+            location.hash = "#/private";
+          } else setMsg(data.msg || "Credenciales inválidas");
+        };
+
+        return (
+          <>
+            <h1>Login</h1>
+            <form onSubmit={submit}>
+              <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+              <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} />
+              <button type="submit">Entrar</button>
+            </form>
+            {msg && <p>{msg}</p>}
+          </>
+        );
+      };
+
+      const Private = () => {
+        const [msg, setMsg] = React.useState("Comprobando token…");
+
+        React.useEffect(() => {
+          const token = sessionStorage.getItem("token");
+          if (!token) { location.hash = "#/login"; return; }
+          fetch(`${API}/private`, { headers: { Authorization: `Bearer ${token}` }})
+            .then(r => r.json()).then(d => setMsg(d.msg || "OK"))
+            .catch(()=> setMsg("No se pudo contactar al backend"));
+        }, []);
+
+        return (
+          <>
+            <h1>Área privada</h1>
+            <p>{msg}</p>
+          </>
+        );
+      };
+
+      const App = () => {
+        const [route, setRoute] = React.useState(routes[location.hash] || "home");
+        React.useEffect(() => {
+          const onHash = () => setRoute(routes[location.hash] || "home");
+          window.addEventListener("hashchange", onHash);
+          return () => window.removeEventListener("hashchange", onHash);
+        }, []);
+        return (
+          <>
+            {route === "home" && <Home />}
+            {route === "signup" && <Signup />}
+            {route === "login" && <Login />}
+            {route === "private" && <Private />}
+          </>
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+      ReactDOM.createRoot(document.getElementById("nav")).render(<NavBar />);
+    </script>
+  </body>
+</html>
